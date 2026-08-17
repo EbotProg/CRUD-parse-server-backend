@@ -1,0 +1,31 @@
+{
+  "name": "crud-parse-server-backend",
+  "version": "1.0.0",
+  "description": "Parse Server backend for the Items CRUD demo",
+  "main": "dist/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "npm run clean && tsc && tsc-alias && npm run copy-files",
+    "clean": "rimraf dist/",
+    "copy-files": "copyfiles -u 1 'src/**/*.{html,css,txt,png,jpg,jpeg,json,xml,po}' dist/ && copyfiles 'package.json' dist/"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "parse": "^8.6.0",
+    "parse-server": "^9.10.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.0",
+    "copyfiles": "^2.4.1",
+    "rimraf": "^6.0.1",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.19.2",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
