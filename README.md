@@ -77,7 +77,7 @@ EXPOSE 1337
 
 CMD [ "npm", "start" ]
 
-The final image had a size of 375.64MB
+The final image had a size of 288.38 MB
 
 ![docker desktop image of docker multistage image with reduced size](image-1.png)
 ![docker desktop image of docker multistage image with reduced size](image-2.png)
