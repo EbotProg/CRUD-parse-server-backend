@@ -1,0 +1,7 @@
+services:
+  frontend:
+    image:
+    environment:
+      NODE_ENV: "Production"
+    ports:
+      - 8080:3000
