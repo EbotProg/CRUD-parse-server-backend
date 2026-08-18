@@ -46,22 +46,38 @@ A plain health check is available at `GET /health`.
 
 The dockerfile in this crud parse server backend project branch doesn't contains a single stage build dockerfile which doesn't take optimization into consideration. These are the lines which make up the layers in the final image
 
-1. FROM node:jod-alpine3.20 --- We're building from the node jod-alpine3.20 version which will get security patches since it is not
+FROM node:jod-alpine3.20 AS build
 
-WORKDIR /parse-server --- sets the working directory to /parse-server
+WORKDIR /tmp
 
-COPY . . --- copies all code and dependencies leaving out the ones excluded by the .dockerignore file
+COPY package\*.json .
 
-RUN npm install --- installs dev dependencies. This makes the image larger since dependencies which aren't used will be found in the image
+RUN npm install
 
-RUN npm run build --- builds project
+COPY . .
 
-VOLUME ["/parse-server/cloud", "/parse-server/logs"] --- sets the provided directories as volumes so that you can mount your own cloud code without rebuilding the image and persist logs without them being lost when the container is removed
+RUN npm run build
 
-EXPOSE 1337 --- exposes ports
+RUN npm cache clean --force
 
-CMD ["npm", "start"] --- command to run on start of project
+FROM node:jod-alpine3.20 AS release
+
+WORKDIR /parse-server
+
+COPY --from=build /tmp/dist/ ./
+
+COPY --from=build /tmp/package.json package.json
+
+RUN npm install --omit=dev \
+ && npm cache clean --force
+
+VOLUME ["/parse-server/cloud", "/parse-server/logs"]
+
+EXPOSE 1337
+
+CMD [ "npm", "start" ]
 
 The final image had a size of 375.64MB
 
-![docker desktop showing size of image after runnning basic dockerfile](image.png)
+![docker desktop image of docker multistage image with reduced size](image-1.png)
+![docker desktop image of docker multistage image with reduced size](image-2.png)
