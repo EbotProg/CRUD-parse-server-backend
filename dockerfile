@@ -47,16 +47,15 @@ COPY --from=build /tmp/dist/ ./
 COPY --from=build /tmp/package.json package.json
 
 # Install packages
-RUN npm install --omit=dev 
-# \
-#     && npm cache clean --force 
+RUN npm install --omit=dev \
+    && npm cache clean --force 
 
 VOLUME ["/parse-server/cloud", "/parse-server/logs"]
 
 EXPOSE 1337
 
 # Clean node cache
-RUN npm cache clean --force             
+# RUN npm cache clean --force             
 
 CMD [ "npm", "start" ]
 
