@@ -41,18 +41,20 @@ WORKDIR /parse-server
 
 # Copy the content of the build stage output to the working directory
 # COPY --from=builder /tmp/node_modules ./node_modules
-COPY --from=build /tmp/dist/ ./
+COPY --from=build --chown=node:node /tmp/dist ./dist
 
 # Copy the package.json file
-COPY --from=build /tmp/package.json package.json
+COPY --from=build --chown=node:node /tmp/package.json package.json
 
 # Install packages
 RUN npm install --omit=dev \
     && npm cache clean --force 
 
-VOLUME ["/parse-server/cloud", "/parse-server/logs"]
+VOLUME ["/parse-server/cloud"]
 
 EXPOSE 1337
+
+USER node
 
 # Clean node cache
 # RUN npm cache clean --force             
