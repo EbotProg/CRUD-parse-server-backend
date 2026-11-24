@@ -5,50 +5,41 @@
 #
 # Run the container with `npm run docker:up`.
 
-# ############################################################
-# # Build stage
-# ############################################################
-
-FROM node:jod-alpine3.20 AS build
+############################################################
+# Build stage
+############################################################
+FROM node:jod-alpine AS build
 
 WORKDIR /tmp
 
-# Copy package.json first to benefit from layer caching
-COPY package*.json .
+# Copy package.json AND package-lock.json first (layer caching)
+COPY package*.json ./
 
-# Install without scripts
-RUN npm install
+# Install exactly the locked versions (incl. dev deps needed for the build).
+# The cache mount keeps downloaded packages between builds → fewer downloads.
+RUN --mount=type=cache,target=/root/.npm npm ci --no-audit --no-fund
 
-# Copy src to have config files for install
+# Copy the source and build
 COPY . .
-
-# Run build step
 RUN npm run build
 
-RUN npm cache clean --force
-
+# Remove dev-only packages; what's left is exactly the production set
+RUN npm prune --omit=dev
 
 ############################################################
 # Release stage
 ############################################################
-
-FROM node:jod-alpine3.20 AS release
+FROM node:jod-alpine AS release
 
 WORKDIR /parse-server
 
-# RUN addgroup --system parse && \
-#     adduser --system -G parse parse
+# npm is not needed at runtime (the app starts with node) and carries vulnerabilities
+RUN rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
 
-# Copy the content of the build stage output to the working directory
-# COPY --from=builder /tmp/node_modules ./node_modules
+# Copy the finished app from the build stage: no second install, no network
+COPY --from=build --chown=node:node /tmp/node_modules ./node_modules
 COPY --from=build --chown=node:node /tmp/dist ./dist
-
-# Copy the package.json file
-COPY --from=build --chown=node:node /tmp/package.json package.json
-
-# Install packages
-RUN npm install --omit=dev \
-    && npm cache clean --force 
+COPY --from=build --chown=node:node /tmp/package.json ./package.json
 
 VOLUME ["/parse-server/cloud"]
 
@@ -56,11 +47,8 @@ EXPOSE 1337
 
 USER node
 
-# Clean node cache
-# RUN npm cache clean --force             
-
-CMD [ "npm", "start" ]
-
+# Same as the "start" script in package.json, without npm
+CMD ["node", "dist/index.js"]
 #-------------------------------------------
 
 # Builder stage

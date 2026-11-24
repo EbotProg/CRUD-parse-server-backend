@@ -1,0 +1,15 @@
+FROM node:jod-alpine3.20
+
+WORKDIR /parse-server
+
+COPY . .
+
+RUN npm install
+
+RUN npm run build
+
+VOLUME ["/parse-server/cloud", "/parse-server/logs"]
+
+EXPOSE 1337
+
+CMD ["npm", "start"]
