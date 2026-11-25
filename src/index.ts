@@ -2,6 +2,7 @@ import "dotenv/config";
 import fs from "node:fs";
 import path from "node:path";
 import express from "express";
+import promBundle from "express-prom-bundle";
 import { ParseServer } from "parse-server";
 
 const PORT = Number(process.env.PORT) || 1337;
@@ -44,9 +45,33 @@ async function start(): Promise<void> {
 
   const app = express();
 
+  // Week 11: Prometheus metrics.
+  // Times every request and serves GET /metrics (scraped by Prometheus inside
+  // the cluster; NOT reachable from the internet because the Ingress only sends
+  // /parse/* to this service).
+  // Creates the histogram http_request_duration_seconds{method,status_code}.
+  app.use(
+    promBundle({
+      includeMethod: true,
+      includeStatusCode: true,
+      includePath: false, // no URL label: Parse URLs contain object IDs (cardinality)
+      buckets: [0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+      promClient: { collectDefaultMetrics: {} },
+    }) as unknown as express.RequestHandler,
+  );
+
   app.get("/health", (_req, res) => {
     res.status(200).json({ status: "ok" });
   });
+
+  // Week 11 alert demo only: returns HTTP 500 on purpose.
+  // Exists ONLY when ENABLE_FAIL_ROUTE=true (off by default).
+  if (process.env.ENABLE_FAIL_ROUTE === "true") {
+    app.get("/debug/fail", (_req, res) => {
+      res.status(500).json({ error: "failing on purpose (alert demo)" });
+    });
+    console.log("WARNING: /debug/fail is enabled (alert demo)");
+  }
 
   app.use(PARSE_MOUNT, parseServer.app);
 
